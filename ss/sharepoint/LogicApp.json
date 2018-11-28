@@ -57,7 +57,15 @@
     },
     "sharepointonlineConnectionDisplayName": {
       "type": "string",
-      "defaultValue": "bretf@interknowlogy.com"
+      "defaultValue": ""
+    },
+    "sharepointonlineWebsite": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "sharepointonlineFolder": {
+      "type": "string",
+      "defaultValue": ""
     },
     "servicebusConnectionName": {
       "type": "string",
@@ -256,9 +264,9 @@
                   }
                 },
                 "method": "get",
-                "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://interknowlogy365.sharepoint.com/development'))}/triggers/onnewfile",
+                "path": "[concat('/@{encodeURIComponent(encodeURIComponent(', '''', parameters('sharepointonlineWebsite'), '''', '))}', '/triggers/onnewfile')]",
                 "queries": {
-                  "folderId": "/Shared Documents/BretTempForMS",
+                  "folderId": "[parameters('sharepointonlineFolder')]",
                   "queryParametersSingleEncoded": true,
                   "inferContentType": true
                 }
