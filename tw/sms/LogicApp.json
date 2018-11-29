@@ -345,7 +345,7 @@
       "dependsOn": [
         "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
-        "[resourceId('Microsoft.Web/connections', parameters('logicAppName'))]"
+        "[resourceId('Microsoft.Web/workflows', parameters('logicAppName'))]"
 
       ],
       "properties": {
