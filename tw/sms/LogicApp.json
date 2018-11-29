@@ -51,40 +51,6 @@
         "description": "The name of the function app to create. Must be globally unique."
       }
     },
-    "sqlConnectionName": {
-      "type": "string",
-      "defaultValue": "sql-1"
-    },
-    "sqlConnectionDisplayName": {
-      "type": "string",
-      "defaultValue": "workbenchdb15"
-    },
-    "sqlServer": {
-      "type": "string",
-      "metadata": {
-        "description": "SQL server name"
-      },
-      "defaultValue": "db-zz5xt4-pre.database.windows.net"
-    },
-    "sqlDatabase": {
-      "type": "string",
-      "metadata": {
-        "description": "SQL database name"
-      },
-      "defaultValue": "zz5xt4-pre"
-    },
-    "sqlUsername": {
-      "type": "securestring",
-      "metadata": {
-        "description": "Username credential"
-      }
-    },
-    "sqlPassword": {
-      "type": "securestring",
-      "metadata": {
-        "description": "Password credential"
-      }
-    },
     "servicebusConnectionName": {
       "type": "string",
       "defaultValue": "servicebus-4"
@@ -143,42 +109,7 @@
         "definition": {
           "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
           "actions": {
-            "Get_User_Chain_Id": {
-              "type": "ApiConnection",
-              "inputs": {
-                "host": {
-                  "connection": {
-                    "name": "@parameters('$connections')['sql_1']['connectionId']"
-                  }
-                },
-                "method": "post",
-                "body": {
-                  "query": "SELECT TOP 1 ChainIdentifier FROM [UserChainMapping] WHERE UserID = (SELECT Id FROM [User] WHERE EmailAddress = 'blockchainagent@blockchaindemos.onmicrosoft.com')"
-                },
-                "path": "/datasets/default/query/sql"
-              },
-              "runAfter": {}
-            },
-            "Parse_JSON": {
-              "type": "ParseJson",
-              "inputs": {
-                "content": "@body('Get_User_Chain_Id')?['resultsets']['Table1'][0]",
-                "schema": {
-                  "properties": {
-                    "ChainIdentifier": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              },
-              "runAfter": {
-                "Get_User_Chain_Id": [
-                  "Succeeded"
-                ]
-              }
-            },
-            "Initialize_variable": {
+            "Initialize_Request_Id": {
               "type": "InitializeVariable",
               "inputs": {
                 "variables": [
@@ -189,11 +120,7 @@
                   }
                 ]
               },
-              "runAfter": {
-                "Parse_JSON": [
-                  "Succeeded"
-                ]
-              }
+              "runAfter": {}
             },
             "Send_message": {
               "type": "ApiConnection",
@@ -205,7 +132,7 @@
                 },
                 "method": "post",
                 "body": {
-                  "ContentData": "@{base64(concat('{    \"requestId\": \"',variables('RequestId'),'\",   ','\n',' \"userChainIdentifier\": \"',body('Parse_JSON')?['ChainIdentifier'],'\",','\n','    \"applicationName\": \"SimpleMarketplace\",','\n','    \"workflowName\": \"SimpleMarketplace\",','\n','    \"parameters\": [        {            \"name\": \"description\",            \"value\": \"',triggerBody()?['Description'],'\"        }, { \"name\": \"price\", \"value\": \"',triggerBody()?['ListingAmount'],'\" }    ],    \"connectionId\": 1,    \"messageSchemaVersion\": \"1.0.0\",    \"messageName\": \"CreateContractRequest\"}'))}"
+                  "ContentData": "@{base64(concat('{    \"requestId\": \"',variables('RequestId'),'\",   ','\n',' \"userChainIdentifier\": \"',variables('UserChainIdentifier'),'\",','\n','    \"applicationName\": \"SimpleMarketplace\",','\n','    \"workflowName\": \"SimpleMarketplace\",','\n','    \"parameters\": [        {            \"name\": \"description\",            \"value\": \"',triggerBody()?['Description'],'\"        }, { \"name\": \"price\", \"value\": \"',triggerBody()?['ListingAmount'],'\" }    ],    \"connectionId\": 1,    \"messageSchemaVersion\": \"1.0.0\",    \"messageName\": \"CreateContractRequest\"}'))}"
                 },
                 "path": "/@{encodeURIComponent(encodeURIComponent('ingressqueue'))}/messages",
                 "queries": {
@@ -213,7 +140,7 @@
                 }
               },
               "runAfter": {
-                "Initialize_variable": [
+                "Initialize_User_Chain_Identifier": [
                   "Succeeded"
                 ]
               }
@@ -226,6 +153,22 @@
               },
               "runAfter": {
                 "Send_message": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Initialize_User_Chain_Identifier": {
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "UserChainIdentifier",
+                    "type": "String"
+                  }
+                ]
+              },
+              "runAfter": {
+                "Initialize_Request_Id": [
                   "Succeeded"
                 ]
               }
@@ -257,18 +200,11 @@
             }
           },
           "contentVersion": "1.0.0.0",
-          "outputs": {
-
-          }
+          "outputs": {}
         },
         "parameters": {
           "$connections": {
             "value": {
-              "sql_1": {
-                "id": "[concat(subscription().id, '/providers/Microsoft.Web/locations/', parameters('logicAppLocation'), '/managedApis/', 'sql')]",
-                "connectionId": "[resourceId('Microsoft.Web/connections', parameters('sqlConnectionName'))]",
-                "connectionName": "[parameters('sqlConnectionName')]"
-              },
               "servicebus_1": {
                 "id": "[concat(subscription().id, '/providers/Microsoft.Web/locations/', parameters('logicAppLocation'), '/managedApis/', 'servicebus')]",
                 "connectionId": "[resourceId('Microsoft.Web/connections', parameters('servicebusConnectionName'))]",
@@ -279,27 +215,8 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Web/connections', parameters('sqlConnectionName'))]",
         "[resourceId('Microsoft.Web/connections', parameters('servicebusConnectionName'))]"
       ]
-    },
-    {
-      "type": "MICROSOFT.WEB/CONNECTIONS",
-      "apiVersion": "2016-06-01",
-      "name": "[parameters('sqlConnectionName')]",
-      "location": "[parameters('logicAppLocation')]",
-      "properties": {
-        "api": {
-          "id": "[concat(subscription().id, '/providers/Microsoft.Web/locations/', parameters('logicAppLocation'), '/managedApis/', 'sql')]"
-        },
-        "displayName": "[parameters('sqlConnectionDisplayName')]",
-        "parameterValues": {
-          "server": "[parameters('sqlServer')]",
-          "database": "[parameters('sqlDatabase')]",
-          "username": "[parameters('sqlUsername')]",
-          "password": "[parameters('sqlPassword')]"
-        }
-      }
     },
     {
       "type": "MICROSOFT.WEB/CONNECTIONS",
@@ -346,7 +263,6 @@
         "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
         "[resourceId('Microsoft.Logic/workflows', parameters('logicAppName'))]"
-
       ],
       "properties": {
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
@@ -399,7 +315,6 @@
         }
       ]
     }
-
   ],
   "outputs": {}
 }
