@@ -78,19 +78,11 @@
       "metadata": {
         "description": "User Chain Identifier"
       }
-    },
-    "registryAddress": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "File Registry Contract Address"
-      }
     }
   },
   "variables": {
     "repoUrl": "https://github.com/TonyChampion/testfunc.git",
     "branch": "master",
-    "functionName": "TwilioSMS",
     "hostingPlanName": "[parameters('functionAppName')]",
     "storageAccountName": "[concat(uniquestring(resourceGroup().id), 'azfunctions')]",
     "storageACcountid": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
@@ -163,7 +155,8 @@
                 "variables": [
                   {
                     "name": "UserChainIdentifier",
-                    "type": "String"
+                    "type": "String",
+                    "value": "[parameters('userChainIdentifier')]"
                   }
                 ]
               },
